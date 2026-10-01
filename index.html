@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Таксометр — Ронанда</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background-color: #121517;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      justify-content: space-between;
+      padding: 16px;
+    }
+    /* Шапка */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background-color: #1e2225;
+      border-radius: 12px;
+    }
+    .brand {
+      font-weight: 700;
+      font-size: 18px;
+      color: #f5b000; /* Желтый акцент */
+      letter-spacing: 0.5px;
+    }
+    .gps-status {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background-color: #2a3035;
+      color: #8a949b;
+    }
+    .gps-status.active {
+      background-color: rgba(39, 174, 96, 0.2);
+      color: #27ae60;
+    }
+
+    /* Главный счетчик */
+    .fare-container {
+      text-align: center;
+      margin: 20px 0;
+    }
+    .fare-label {
+      font-size: 14px;
+      color: #8a949b;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .fare-amount {
+      font-size: 56px;
+      font-weight: 800;
+      color: #ffffff;
+      margin: 8px 0;
+    }
+    .currency {
+      font-size: 24px;
+      color: #f5b000;
+    }
+
+    /* Сетка метрик */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .metric-card {
+      background-color: #1e2225;
+      padding: 16px;
+      border-radius: 12px;
+      text-align: center;
+    }
+    .metric-title {
+      font-size: 12px;
+      color: #8a949b;
+      margin-bottom: 6px;
+    }
+    .metric-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    /* Настройки тарифа */
+    .tariff-settings {
+      background-color: #1e2225;
+      border-radius: 12px;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+    .tariff-input {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .tariff-input label {
+      font-size: 10px;
+      color: #8a949b;
+      margin-bottom: 4px;
+    }
+    .tariff-input input {
+      width: 100%;
+      background-color: #2a3035;
+      border: 1px solid #3a4248;
+      color: #fff;
+      text-align: center;
+      padding: 6px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* Кнопки управления */
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .btn {
+      flex: 1;
+      padding: 18px;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn:active {
+      opacity: 0.8;
+    }
+    .btn-start {
+      background-color: #27ae60;
+      color: #ffffff;
+    }
+    .btn-stop {
+      background-color: #eb5757;
+      color: #ffffff;
+    }
+    .btn-reset {
+      background-color: #2a3035;
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Шапка -->
+  <div class="header">
+    <div class="brand">РОНАНДА</div>
+    <div class="gps-status" id="gpsStatus">GPS: Ожидание</div>
+  </div>
+
+  <!-- Главное табло стоимости -->
+  <div class="fare-container">
+    <div class="fare-label">Стоимость поездки</div>
+    <div class="fare-amount"><span id="totalFare">0.00</span> <span class="currency">TJS</span></div>
+  </div>
+
+  <!-- Метрики -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-title">Расстояние</div>
+      <div class="metric-value"><span id="distance">0.00</span> км</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-title">Время в пути</div>
+      <div class="metric-value" id="duration">00:00</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-title">Скорость</div>
+      <div class="metric-value"><span id="speed">0</span> км/ч</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-title">Ожидание</div>
+      <div class="metric-value"><span id="idleTime">00:00</span></div>
+    </div>
+  </div>
+
+  <!-- Настройки тарификации -->
+  <div class="tariff-settings">
+    <div class="tariff-input">
+      <label>Посадка (TJS)</label>
+      <input type="number" id="rateBase" value="10">
+    </div>
+    <div class="tariff-input">
+      <label>1 км (TJS)</label>
+      <input type="number" id="rateKm" value="3">
+    </div>
+    <div class="tariff-input">
+      <label>1 мин ожид. (TJS)</label>
+      <input type="number" id="rateMin" value="1">
+    </div>
+  </div>
+
+  <!-- Кнопки действий -->
+  <div class="controls">
+    <button class="btn btn-start" id="startBtn">СТАРТ</button>
+    <button class="btn btn-reset" id="resetBtn">СБРОС</button>
+  </div>
+
+  <script>
+    let isRunning = false;
+    let watchId = null;
+    let timerId = null;
+
+    let totalDistance = 0; // в км
+    let totalSeconds = 0;
+    let idleSeconds = 0;
+    let lastPosition = null;
+
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const gpsStatus = document.getElementById('gpsStatus');
+
+    // Формула Haversine для расчета расстояния по GPS
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371; // Радиус Земли в км
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60).toString().padStart(2, '0');
+      const s = (sec % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function updateCalculations() {
+      const rateBase = parseFloat(document.getElementById('rateBase').value) || 0;
+      const rateKm = parseFloat(document.getElementById('rateKm').value) || 0;
+      const rateMin = parseFloat(document.getElementById('rateMin').value) || 0;
+
+      const fare = rateBase + (totalDistance * rateKm) + ((idleSeconds / 60) * rateMin);
+      
+      document.getElementById('totalFare').innerText = fare.toFixed(2);
+      document.getElementById('distance').innerText = totalDistance.toFixed(2);
+      document.getElementById('duration').innerText = formatTime(totalSeconds);
+      document.getElementById('idleTime').innerText = formatTime(idleSeconds);
+    }
+
+    function startTaximeter() {
+      if (!navigator.geolocation) {
+        alert("Геолокация не поддерживается вашим браузером");
+        return;
+      }
+
+      isRunning = true;
+      startBtn.innerText = "СТОП";
+      startBtn.className = "btn btn-stop";
+
+      // Запуск таймера
+      timerId = setInterval(() => {
+        totalSeconds++;
+        updateCalculations();
+      }, 1000);
+
+      // Отслеживание GPS
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          gpsStatus.innerText = "GPS: Активен";
+          gpsStatus.className = "gps-status active";
+
+          const speedKmH = pos.coords.speed ? (pos.coords.speed * 3.6) : 0;
+          document.getElementById('speed').innerText = Math.round(speedKmH);
+
+          // Если скорость меньше 3 км/ч — считаем как простоя/ожидание
+          if (speedKmH < 3) {
+            idleSeconds++;
+          }
+
+          if (lastPosition) {
+            const dist = calculateDistance(
+              lastPosition.coords.latitude,
+              lastPosition.coords.longitude,
+              pos.coords.latitude,
+              pos.coords.longitude
+            );
+
+            // Фильтр от случайностей и сбоев GPS (отсекаем шум менее 5 метров)
+            if (dist > 0.005) {
+              totalDistance += dist;
+              lastPosition = pos;
+            }
+          } else {
+            lastPosition = pos;
+          }
+          updateCalculations();
+        },
+        (err) => {
+          gpsStatus.innerText = "GPS: Ошибка";
+          gpsStatus.className = "gps-status";
+        },
+        { enableHighAccuracy: true, maximumAge: 1000 }
+      );
+    }
+
+    function stopTaximeter() {
+      isRunning = false;
+      startBtn.innerText = "СТАРТ";
+      startBtn.className = "btn btn-start";
+
+      clearInterval(timerId);
+      if (watchId) navigator.geolocation.clearWatch(watchId);
+      gpsStatus.innerText = "GPS: Остановлен";
+      gpsStatus.className = "gps-status";
+    }
+
+    startBtn.addEventListener('click', () => {
+      if (!isRunning) {
+        startTaximeter();
+      } else {
+        stopTaximeter();
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      stopTaximeter();
+      totalDistance = 0;
+      totalSeconds = 0;
+      idleSeconds = 0;
+      lastPosition = null;
+      document.getElementById('speed').innerText = "0";
+      updateCalculations();
+    });
+  </script>
+</body>
+</html>
